@@ -1,0 +1,84 @@
+
+# this code generates data perfectly
+import pandas as pd
+import numpy as np
+import random
+# Define individual attack simulation functions with specific data fractions
+import numpy as np
+import pandas as pd
+
+
+
+
+
+
+
+# Injection attacks grouped to collectively make up 0.1 of the total data
+def apply_ramp_attack(data, frac=0.02):
+    """Simulates a Ramp Attack by gradually increasing values over time."""
+    attack_data = data.sample(frac=frac, replace=False)
+    for col in [c for c in attack_data.columns if 'hh_' in c]:
+        attack_data[col] *= np.linspace(0, 1, num=len(attack_data))  # Gradually increasing
+    attack_data['label'] = 'ramp'
+    return attack_data
+
+def apply_pulse_attack(data, frac=0.02):
+    """Simulates a Pulse Attack by introducing spikes."""
+    attack_data = data.sample(frac=frac, replace=False).reset_index(drop=True)  # Reset index to make it contiguous
+    for col in [c for c in attack_data.columns if 'hh_' in c]:
+        indices = np.arange(0, len(attack_data), 1)  # Introduce a pulse every 10 samples
+        attack_data.loc[indices, col] *= random.randint(0, 10)  # Doubling the value to simulate a pulse
+    attack_data['label'] = 'pulse'
+    return attack_data
+
+def apply_random_attack(data, frac=0.02):
+    """Simulates a Random Attack by adding random noise."""
+    attack_data = data.sample(frac=frac, replace=False)
+    for col in [c for c in attack_data.columns if 'hh_' in c]:
+        random_noise = np.random.normal(1, 0.8, size=len(attack_data))
+        attack_data[col] *= random_noise
+    attack_data['label'] = 'random'
+    return attack_data
+
+def apply_scaling_attack(data, frac=0.02):
+    """Simulates a Scaling Attack by scaling up or down."""
+    attack_data = data.sample(frac=frac, replace=False)
+    for col in [c for c in attack_data.columns if 'hh_' in c]:
+        attack_data[col] *= random.randint(0,10)  # Scaling up by a factor of 1.5
+    attack_data['label'] = 'scaling'
+    return attack_data
+
+def apply_bias_injection_attack(data, frac=0.02):
+    """Simulates a Bias Injection Attack by adding a constant bias."""
+    attack_data = data.sample(frac=frac, replace=False)
+    for col in [c for c in attack_data.columns if 'hh_' in c]:
+        attack_data[col] -=0.15   # Adding a constant bias
+    attack_data['label'] = 'bias'
+    return attack_data
+
+# Function to simulate all attacks
+def simulate_all_attacks(data):
+    total_data_count = len(data)
+    fraction_each = 0.1
+    fraction_injection_total = 0.1
+
+  
+    injection_data1 = apply_ramp_attack(data)
+    injection_data2 = apply_pulse_attack(data)
+    injection_data3 = apply_random_attack(data)
+    injection_data4 = apply_scaling_attack(data) 
+    injection_data5 = apply_bias_injection_attack(data)
+    
+    # Combine all attack data with a portion of the original data
+    #remaining_data = data.drop(pd.concat([ replay_data, poisoning_data, time_delay_data, injection_data1,injection_data2,injection_data3,injection_data4,injection_data5]).index)
+    data['label'] = 'normal'
+
+    # Concatenate all data and shuffle
+    augmented_data = pd.concat([data, injection_data1,injection_data2,injection_data3,injection_data4,injection_data5])
+    augmented_data = augmented_data.sample(frac=1).reset_index(drop=True)  # Shuffle the dataset
+    return augmented_data
+
+# Example usage
+data = pd.read_csv('original data path')  # Ensure you load your original dataset
+augmented_data = simulate_all_attacks(data)
+augmented_data.to_csv('new data path', index=False)
